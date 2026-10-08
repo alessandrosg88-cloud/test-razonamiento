@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test de Razonamiento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: una sola columna centrada tipo "hoja de examen", una pregunta por pantalla */
+:root{
+  --bg:#eef1f5; --paper:#ffffff; --ink:#152033; --muted:#5a6578; --line:#d5dbe5;
+  --accent:#2f5bea; --accent-soft:#e3e9fd; --ok:#1d8a5b; --ok-soft:#dff3ea; --bad:#c23b3b; --bad-soft:#fae3e3;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f141d; --paper:#171e2a; --ink:#e6ebf3; --muted:#97a2b5; --line:#2a3445;
+  --accent:#7b9bff; --accent-soft:#1f2a47; --ok:#4cc58f; --ok-soft:#163327; --bad:#f07a7a; --bad-soft:#3a1d1f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141d; --paper:#171e2a; --ink:#e6ebf3; --muted:#97a2b5; --line:#2a3445;
+  --accent:#7b9bff; --accent-soft:#1f2a47; --ok:#4cc58f; --ok-soft:#163327; --bad:#f07a7a; --bad-soft:#3a1d1f; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;padding:0 16px}
+.wrap{max-width:640px;margin:0 auto;padding-block:40px 64px;display:flex;flex-direction:column;gap:24px}
+header{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(1.8rem,5vw,2.4rem);line-height:1.1;margin:0;text-wrap:balance;letter-spacing:-.01em}
+.meta{font-family:var(--mono);font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:28px}
+.lead{color:var(--muted);margin:0;max-width:60ch}
+.rules{margin:0;padding-left:1.2em;display:grid;gap:6px}
+.bar{height:6px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+.qhead{display:flex;justify-content:space-between;gap:12px;font-family:var(--mono);font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.q{font-family:var(--display);font-weight:500;font-size:1.35rem;line-height:1.3;margin:12px 0 20px;text-wrap:balance}
+.seq{font-family:var(--mono);background:var(--accent-soft);padding:2px 8px;border-radius:6px;white-space:nowrap}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:460px){.opts{grid-template-columns:1fr}}
+.opt{font:inherit;text-align:left;padding:14px 16px;border:1.5px solid var(--line);border-radius:10px;background:transparent;color:var(--ink);cursor:pointer;display:flex;gap:12px;align-items:center;min-width:0}
+.opt:hover{border-color:var(--accent)}
+.opt:focus-visible,.btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.opt b{font-family:var(--mono);font-size:.8rem;color:var(--muted);flex:none}
+.opt.sel{border-color:var(--accent);background:var(--accent-soft)}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:24px}
+.btn{font:inherit;font-weight:600;padding:12px 22px;border-radius:10px;border:1.5px solid var(--accent);background:var(--accent);color:var(--paper);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.score{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-end}
+.big{font-family:var(--display);font-weight:700;font-size:4.5rem;line-height:1;color:var(--accent);font-variant-numeric:tabular-nums}
+.lbl{font-family:var(--mono);font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.stat{font-family:var(--display);font-size:1.6rem;font-weight:500;font-variant-numeric:tabular-nums}
+.scale{position:relative;height:44px;margin-top:20px}
+.scale .track{position:absolute;top:10px;left:0;right:0;height:8px;border-radius:99px;background:linear-gradient(90deg,var(--line),var(--accent-soft) 40%,var(--accent-soft) 60%,var(--line))}
+.scale .pin{position:absolute;top:2px;width:4px;height:24px;background:var(--accent);border-radius:2px;transform:translateX(-50%)}
+.scale .ticks{position:absolute;top:26px;left:0;right:0;font-family:var(--mono);font-size:.7rem;color:var(--muted)}
+.scale .ticks span{position:absolute;transform:translateX(-50%)}
+.note{font-size:.88rem;color:var(--muted);margin:0}
+.review{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.review li{padding:12px 14px;border-radius:10px;display:grid;gap:2px;font-size:.92rem}
+.review li.ok{background:var(--ok-soft)} .review li.ko{background:var(--bad-soft)}
+.review .t{font-weight:600}
+.review .r{font-family:var(--mono);font-size:.78rem}
+.review li.ok .r{color:var(--ok)} .review li.ko .r{color:var(--bad)}
+h2{font-family:var(--display);font-weight:500;font-size:1.2rem;margin:0}
+@media (prefers-reduced-motion:reduce){.bar>i{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Test de Razonamiento</h1>
+    <span class="meta" id="timer">00:00</span>
+  </header>
+
+  <section class="card" id="intro" style="display:grid;gap:16px">
+    <p class="lead">20 preguntas de series numéricas, lógica, analogías y problemas verbales. Al final verás una estimación orientativa de tu CI y la solución de cada pregunta.</p>
+    <ul class="rules">
+      <li>Responde sin calculadora ni buscador.</li>
+      <li>Puedes volver atrás y cambiar respuestas.</li>
+      <li>Tiempo recomendado: unos 20 minutos.</li>
+    </ul>
+    <div><button class="btn" id="start">Empezar el test</button></div>
+  </section>
+
+  <section id="quiz" hidden style="display:grid;gap:16px">
+    <div class="bar"><i id="prog"></i></div>
+    <div class="card">
+      <div class="qhead"><span id="qnum"></span><span id="qcat"></span></div>
+      <p class="q" id="qtext"></p>
+      <div class="opts" id="opts"></div>
+      <div class="nav">
+        <button class="btn ghost" id="prev">Anterior</button>
+        <button class="btn" id="next">Siguiente</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="result" hidden style="display:grid;gap:16px">
+    <div class="card" style="display:grid;gap:16px">
+      <div class="score">
+        <div><div class="lbl">CI estimado</div><div class="big" id="iq">—</div></div>
+        <div><div class="lbl">Aciertos</div><div class="stat" id="hits"></div></div>
+        <div><div class="lbl">Tiempo</div><div class="stat" id="time"></div></div>
+      </div>
+      <div class="scale">
+        <div class="track"></div>
+        <div class="pin" id="pin"></div>
+        <div class="ticks"><span style="left:0%">70</span><span style="left:20%">85</span><span style="left:40%">100</span><span style="left:60%">115</span><span style="left:80%">130</span><span style="left:100%">145</span></div>
+      </div>
+      <p class="note" id="band"></p>
+      <p class="note">Es una estimación lúdica. Un CI real solo se mide con un test estandarizado (como WAIS) aplicado por un psicólogo.</p>
+      <div><button class="btn ghost" id="again">Repetir el test</button></div>
+    </div>
+    <div class="card" style="display:grid;gap:14px">
+      <h2>Soluciones</h2>
+      <ul class="review" id="review"></ul>
+    </div>
+  </section>
+</div>
+
+<script>
+const Q=[
+ {c:"Series",q:'¿Qué número sigue? <span class="seq">2, 6, 12, 20, 30, ?</span>',o:["40","42","44","36"],a:1,e:"Son n×(n+1): 6×7 = 42."},
+ {c:"Series",q:'¿Qué número sigue? <span class="seq">3, 5, 9, 17, 33, ?</span>',o:["49","64","65","66"],a:2,e:"Cada término es el doble menos 1: 33×2−1 = 65."},
+ {c:"Series",q:'¿Qué letra sigue? <span class="seq">A, C, F, J, O, ?</span>',o:["S","T","U","V"],a:2,e:"Saltos de +2, +3, +4, +5, +6: O(15)+6 = U(21)."},
+ {c:"Series",q:'¿Qué número sigue? <span class="seq">2, 3, 5, 7, 11, 13, ?</span>',o:["15","17","19","16"],a:1,e:"Son números primos; el siguiente es 17."},
+ {c:"Matrices",q:'Completa la tabla: <span class="seq">2 4 8 · 3 9 27 · 4 16 ?</span>',o:["32","48","64","56"],a:2,e:"Cada fila son potencias: 4, 4², 4³ = 64."},
+ {c:"Analogías",q:"Libro es a página como árbol es a…",o:["Bosque","Hoja","Madera","Raíz"],a:1,e:"Una página es parte de un libro; una hoja es parte de un árbol."},
+ {c:"Analogías",q:'8 es a 64 como 11 es a…',o:["88","111","121","132"],a:2,e:"Es el cuadrado: 11² = 121."},
+ {c:"Clasificación",q:"¿Cuál no pertenece al grupo? Perro, Gato, Águila, Caballo, Vaca",o:["Perro","Águila","Caballo","Vaca"],a:1,e:"El águila es un ave; los demás son mamíferos."},
+ {c:"Lógica",q:"Todos los bloops son razzies y todos los razzies son lazzies. ¿Todos los bloops son lazzies?",o:["Sí, seguro","No","No se puede saber","Solo algunos"],a:0,e:"Si A ⊂ B y B ⊂ C, entonces A ⊂ C."},
+ {c:"Lógica",q:"El padre de María tiene cinco hijas: Nana, Nene, Nini y Nono. ¿Cómo se llama la quinta?",o:["Nunu","María","Nina","No se sabe"],a:1,e:"La quinta hija es María, la protagonista de la pregunta."},
+ {c:"Lógica",q:"Si ayer fuera mañana, hoy sería viernes. ¿Qué día es hoy?",o:["Miércoles","Viernes","Domingo","Sábado"],a:2,e:"El “hoy” hipotético está dos días antes del real: viernes + 2 = domingo."},
+ {c:"Problemas",q:"Un bate y una pelota cuestan 1,10 €. El bate cuesta 1 € más que la pelota. ¿Cuánto cuesta la pelota?",o:["0,10 €","0,05 €","0,15 €","0,01 €"],a:1,e:"Pelota = x, bate = x+1. 2x+1 = 1,10 → x = 0,05 €."},
+ {c:"Problemas",q:"5 máquinas hacen 5 piezas en 5 minutos. ¿Cuánto tardan 100 máquinas en hacer 100 piezas?",o:["100 min","20 min","5 min","1 min"],a:2,e:"Cada máquina hace una pieza en 5 minutos, así que siguen siendo 5 minutos."},
+ {c:"Problemas",q:"Unos nenúfares duplican su superficie cada día y cubren el lago en 48 días. ¿En cuántos días cubren la mitad?",o:["24","47","46","36"],a:1,e:"Un día antes de cubrirlo entero: día 47."},
+ {c:"Problemas",q:"Un padre tiene 4 veces la edad de su hijo. Dentro de 20 años tendrá el doble. ¿Qué edad tiene el hijo?",o:["8","10","12","15"],a:1,e:"4x+20 = 2(x+20) → 2x = 20 → x = 10."},
+ {c:"Problemas",q:"Un tren sale a las 9:00 a 60 km/h. Otro sale del mismo sitio a las 10:00 a 90 km/h en el mismo sentido. ¿A qué hora lo alcanza?",o:["11:00","11:30","12:00","13:00"],a:2,e:"Ventaja de 60 km, se acerca a 30 km/h: 2 horas después de las 10:00."},
+ {c:"Espacial",q:"Pintas un cubo por fuera y lo cortas en 27 cubitos iguales. ¿Cuántos cubitos tienen exactamente dos caras pintadas?",o:["8","6","12","24"],a:2,e:"Los cubitos del centro de cada arista: 12 aristas × 1 = 12."},
+ {c:"Espacial",q:"¿Qué ángulo forman las agujas del reloj a las 3:15?",o:["0°","7,5°","15°","30°"],a:1,e:"La aguja horaria avanza 0,5° por minuto: 15 × 0,5 = 7,5°."},
+ {c:"Espacial",q:"Miras al norte, giras 90° a la derecha, luego 180°, luego 90° a la izquierda. ¿Hacia dónde miras?",o:["Norte","Sur","Este","Oeste"],a:1,e:"Norte → Este → Oeste → Sur."},
+ {c:"Verbal",q:"Ordena las letras de «RAMO» para formar una palabra opuesta a «odio».",o:["MORA","ROMA","AMOR","OMAR"],a:2,e:"AMOR es lo opuesto a odio."}
+];
+const $=id=>document.getElementById(id);
+let i=0,ans=Array(Q.length).fill(null),t0=0,tick=null,elapsed=0;
+const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+function show(sec){["intro","quiz","result"].forEach(k=>{const el=$(k);el.hidden=k!==sec;el.style.display=k===sec?"grid":"none"});}
+function render(){
+  const q=Q[i];
+  $("qnum").textContent=`Pregunta ${i+1} de ${Q.length}`;
+  $("qcat").textContent=q.c;
+  $("qtext").innerHTML=q.q;
+  $("prog").style.width=((i)/Q.length*100)+"%";
+  const box=$("opts");box.innerHTML="";
+  q.o.forEach((t,k)=>{const b=document.createElement("button");b.className="opt"+(ans[i]===k?" sel":"");b.id="opt"+k;
+    b.innerHTML=`<b>${"ABCD"[k]}</b><span>${t}</span>`;
+    b.onclick=()=>{ans[i]=k;render();};box.appendChild(b);});
+  $("prev").disabled=i===0;
+  $("next").textContent=i===Q.length-1?"Ver resultado":"Siguiente";
+  $("next").disabled=ans[i]===null;
+}
+function start(){i=0;ans=Array(Q.length).fill(null);t0=Date.now();clearInterval(tick);
+  tick=setInterval(()=>{elapsed=Math.floor((Date.now()-t0)/1000);$("timer").textContent=fmt(elapsed)},1000);
+  $("timer").textContent="00:00";show("quiz");render();}
+function finish(){
+  clearInterval(tick);elapsed=Math.floor((Date.now()-t0)/1000);
+  const hits=ans.filter((a,k)=>a===Q[k].a).length;
+  let iq=70+hits*3.75;
+  if(hits>=15&&elapsed<600)iq+=3; // bonus por rapidez con alta precisión
+  iq=Math.round(Math.min(145,iq));
+  $("iq").textContent=iq;$("hits").textContent=`${hits}/${Q.length}`;$("time").textContent=fmt(elapsed);
+  $("pin").style.left=Math.max(0,Math.min(100,(iq-70)/75*100))+"%";
+  $("band").textContent= iq>=130?"Rango muy superior: razonamiento excepcional en este tipo de problemas.":
+    iq>=115?"Rango superior a la media.":iq>=85?"Rango medio: donde se sitúa la mayoría de la población.":
+    "Por debajo de la media en este test. El cansancio o las prisas influyen mucho; prueba otro día con calma.";
+  $("review").innerHTML=Q.map((q,k)=>{const ok=ans[k]===q.a;
+    return `<li class="${ok?"ok":"ko"}"><span class="t">${k+1}. ${q.q.replace(/<[^>]+>/g,"")}</span>
+    <span class="r">${ok?"Correcta":"Tu respuesta: "+q.o[ans[k]]+" · Correcta: "+q.o[q.a]}</span><span>${q.e}</span></li>`}).join("");
+  show("result");window.scrollTo(0,0);
+}
+$("start").onclick=start;$("again").onclick=start;
+$("prev").onclick=()=>{if(i>0){i--;render();}};
+$("next").onclick=()=>{if(ans[i]===null)return;if(i<Q.length-1){i++;render();}else finish();};
+show("intro");
+</script>
+</body>
+</html>
