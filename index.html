@@ -65,23 +65,30 @@ h1{font-family:var(--display);font-weight:700;font-size:clamp(1.8rem,5vw,2.4rem)
 h2{font-family:var(--display);font-weight:500;font-size:1.2rem;margin:0}
 @media (prefers-reduced-motion:reduce){.bar>i{transition:none}}
 </style>
+<style>
+.langs{display:flex;gap:6px;flex-wrap:wrap}
+.lang{font:inherit;font-family:var(--mono);font-size:.78rem;padding:6px 10px;border-radius:8px;border:1.5px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
+.lang[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+</style>
 </head>
 <body>
-
 <div class="wrap">
-  <header>
-    <h1>Test de Razonamiento</h1>
+  <div class="top">
+    <div class="langs" role="group" aria-label="Language">
+      <button class="lang" data-l="es">ES</button>
+      <button class="lang" data-l="it">IT</button>
+      <button class="lang" data-l="en">EN</button>
+      <button class="lang" data-l="ne">नेपाली</button>
+    </div>
     <span class="meta" id="timer">00:00</span>
-  </header>
+  </div>
+  <header><h1 id="title"></h1></header>
 
   <section class="card" id="intro" style="display:grid;gap:16px">
-    <p class="lead">20 preguntas de series numéricas, lógica, analogías y problemas verbales. Al final verás una estimación orientativa de tu CI y la solución de cada pregunta.</p>
-    <ul class="rules">
-      <li>Responde sin calculadora ni buscador.</li>
-      <li>Puedes volver atrás y cambiar respuestas.</li>
-      <li>Tiempo recomendado: unos 20 minutos.</li>
-    </ul>
-    <div><button class="btn" id="start">Empezar el test</button></div>
+    <p class="lead" id="lead"></p>
+    <ul class="rules" id="rules"></ul>
+    <div><button class="btn" id="start"></button></div>
   </section>
 
   <section id="quiz" hidden style="display:grid;gap:16px">
@@ -91,8 +98,8 @@ h2{font-family:var(--display);font-weight:500;font-size:1.2rem;margin:0}
       <p class="q" id="qtext"></p>
       <div class="opts" id="opts"></div>
       <div class="nav">
-        <button class="btn ghost" id="prev">Anterior</button>
-        <button class="btn" id="next">Siguiente</button>
+        <button class="btn ghost" id="prev"></button>
+        <button class="btn" id="next"></button>
       </div>
     </div>
   </section>
@@ -100,9 +107,9 @@ h2{font-family:var(--display);font-weight:500;font-size:1.2rem;margin:0}
   <section id="result" hidden style="display:grid;gap:16px">
     <div class="card" style="display:grid;gap:16px">
       <div class="score">
-        <div><div class="lbl">CI estimado</div><div class="big" id="iq">—</div></div>
-        <div><div class="lbl">Aciertos</div><div class="stat" id="hits"></div></div>
-        <div><div class="lbl">Tiempo</div><div class="stat" id="time"></div></div>
+        <div><div class="lbl" id="l_iq"></div><div class="big" id="iq">—</div></div>
+        <div><div class="lbl" id="l_hits"></div><div class="stat" id="hits"></div></div>
+        <div><div class="lbl" id="l_time"></div><div class="stat" id="time"></div></div>
       </div>
       <div class="scale">
         <div class="track"></div>
@@ -110,80 +117,159 @@ h2{font-family:var(--display);font-weight:500;font-size:1.2rem;margin:0}
         <div class="ticks"><span style="left:0%">70</span><span style="left:20%">85</span><span style="left:40%">100</span><span style="left:60%">115</span><span style="left:80%">130</span><span style="left:100%">145</span></div>
       </div>
       <p class="note" id="band"></p>
-      <p class="note">Es una estimación lúdica. Un CI real solo se mide con un test estandarizado (como WAIS) aplicado por un psicólogo.</p>
-      <div><button class="btn ghost" id="again">Repetir el test</button></div>
+      <p class="note" id="disc"></p>
+      <div><button class="btn ghost" id="again"></button></div>
     </div>
     <div class="card" style="display:grid;gap:14px">
-      <h2>Soluciones</h2>
+      <h2 id="l_sol"></h2>
       <ul class="review" id="review"></ul>
     </div>
   </section>
 </div>
 
 <script>
+const UI={
+ es:{title:"Test de Razonamiento",lead:"20 preguntas de series numéricas, lógica, analogías y problemas. Al final verás una estimación orientativa de tu CI y la solución de cada pregunta.",
+  rules:["Responde sin calculadora ni buscador.","Puedes volver atrás y cambiar respuestas.","Tiempo recomendado: unos 20 minutos."],
+  start:"Empezar el test",q:(a,b)=>`Pregunta ${a} de ${b}`,prev:"Anterior",next:"Siguiente",finish:"Ver resultado",
+  iq:"CI estimado",hits:"Aciertos",time:"Tiempo",sol:"Soluciones",again:"Repetir el test",ok:"Correcta",yours:"Tu respuesta",right:"Correcta",
+  disc:"Es una estimación lúdica. Un CI real solo se mide con un test estandarizado (como WAIS) aplicado por un psicólogo.",
+  bands:["Rango muy superior: razonamiento excepcional en este tipo de problemas.","Rango superior a la media.","Rango medio: donde se sitúa la mayoría de la población.","Por debajo de la media en este test. El cansancio o las prisas influyen mucho; prueba otro día con calma."]},
+ it:{title:"Test di Ragionamento",lead:"20 domande su serie numeriche, logica, analogie e problemi. Alla fine vedrai una stima indicativa del tuo QI e la soluzione di ogni domanda.",
+  rules:["Rispondi senza calcolatrice né motori di ricerca.","Puoi tornare indietro e cambiare le risposte.","Tempo consigliato: circa 20 minuti."],
+  start:"Inizia il test",q:(a,b)=>`Domanda ${a} di ${b}`,prev:"Indietro",next:"Avanti",finish:"Vedi il risultato",
+  iq:"QI stimato",hits:"Risposte esatte",time:"Tempo",sol:"Soluzioni",again:"Ripeti il test",ok:"Corretta",yours:"La tua risposta",right:"Corretta",
+  disc:"È una stima per gioco. Un QI reale si misura solo con un test standardizzato (come la WAIS) somministrato da uno psicologo.",
+  bands:["Fascia molto superiore: ragionamento eccezionale in questo tipo di problemi.","Fascia superiore alla media.","Fascia media: quella in cui si trova la maggior parte della popolazione.","Sotto la media in questo test. Stanchezza e fretta contano molto; riprova un altro giorno con calma."]},
+ en:{title:"Reasoning Test",lead:"20 questions on number series, logic, analogies and word problems. At the end you'll see a rough IQ estimate and the solution to every question.",
+  rules:["Answer without a calculator or search engine.","You can go back and change your answers.","Suggested time: about 20 minutes."],
+  start:"Start the test",q:(a,b)=>`Question ${a} of ${b}`,prev:"Back",next:"Next",finish:"See result",
+  iq:"Estimated IQ",hits:"Correct",time:"Time",sol:"Solutions",again:"Take the test again",ok:"Correct",yours:"Your answer",right:"Correct",
+  disc:"This is a just-for-fun estimate. A real IQ can only be measured with a standardized test (such as the WAIS) given by a psychologist.",
+  bands:["Very superior range: exceptional reasoning on this kind of problem.","Above-average range.","Average range: where most people fall.","Below average on this test. Tiredness and rushing matter a lot; try again another day."]},
+ ne:{title:"तर्कशक्ति परीक्षा",lead:"सङ्ख्या श्रृङ्खला, तर्क, समानता र समस्याका २० प्रश्नहरू। अन्त्यमा तपाईंको IQ को अनुमानित अङ्क र हरेक प्रश्नको उत्तर देखिनेछ।",
+  rules:["क्याल्कुलेटर वा इन्टरनेट खोज बिना उत्तर दिनुहोस्।","तपाईं पछाडि गएर उत्तर बदल्न सक्नुहुन्छ।","सिफारिस गरिएको समय: करिब २० मिनेट।"],
+  start:"परीक्षा सुरु गर्नुहोस्",q:(a,b)=>`प्रश्न ${a} / ${b}`,prev:"पछाडि",next:"अगाडि",finish:"नतिजा हेर्नुहोस्",
+  iq:"अनुमानित IQ",hits:"सही उत्तर",time:"समय",sol:"उत्तरहरू",again:"फेरि परीक्षा दिनुहोस्",ok:"सही",yours:"तपाईंको उत्तर",right:"सही उत्तर",
+  disc:"यो मनोरञ्जनका लागि गरिएको अनुमान मात्र हो। वास्तविक IQ मनोवैज्ञानिकले लिने मानकीकृत परीक्षा (जस्तै WAIS) बाट मात्र मापन गरिन्छ।",
+  bands:["अति उच्च स्तर: यस्ता समस्यामा असाधारण तर्कशक्ति।","औसतभन्दा माथि।","औसत स्तर: धेरैजसो मानिसहरू यहीँ पर्छन्।","यस परीक्षामा औसतभन्दा तल। थकान र हतारले धेरै असर गर्छ; अर्को दिन शान्त भएर फेरि प्रयास गर्नुहोस्।"]}
+};
+const CAT={series:{es:"Series",it:"Serie",en:"Series",ne:"श्रृङ्खला"},matrix:{es:"Matrices",it:"Matrici",en:"Matrices",ne:"तालिका"},
+ analogy:{es:"Analogías",it:"Analogie",en:"Analogies",ne:"समानता"},odd:{es:"Clasificación",it:"Classificazione",en:"Classification",ne:"वर्गीकरण"},
+ logic:{es:"Lógica",it:"Logica",en:"Logic",ne:"तर्क"},prob:{es:"Problemas",it:"Problemi",en:"Problems",ne:"समस्या"},space:{es:"Espacial",it:"Spaziale",en:"Spatial",ne:"स्थानिक"}};
+const S=s=>`<span class="seq">${s}</span>`;
 const Q=[
- {c:"Series",q:'¿Qué número sigue? <span class="seq">2, 6, 12, 20, 30, ?</span>',o:["40","42","44","36"],a:1,e:"Son n×(n+1): 6×7 = 42."},
- {c:"Series",q:'¿Qué número sigue? <span class="seq">3, 5, 9, 17, 33, ?</span>',o:["49","64","65","66"],a:2,e:"Cada término es el doble menos 1: 33×2−1 = 65."},
- {c:"Series",q:'¿Qué letra sigue? <span class="seq">A, C, F, J, O, ?</span>',o:["S","T","U","V"],a:2,e:"Saltos de +2, +3, +4, +5, +6: O(15)+6 = U(21)."},
- {c:"Series",q:'¿Qué número sigue? <span class="seq">2, 3, 5, 7, 11, 13, ?</span>',o:["15","17","19","16"],a:1,e:"Son números primos; el siguiente es 17."},
- {c:"Matrices",q:'Completa la tabla: <span class="seq">2 4 8 · 3 9 27 · 4 16 ?</span>',o:["32","48","64","56"],a:2,e:"Cada fila son potencias: 4, 4², 4³ = 64."},
- {c:"Analogías",q:"Libro es a página como árbol es a…",o:["Bosque","Hoja","Madera","Raíz"],a:1,e:"Una página es parte de un libro; una hoja es parte de un árbol."},
- {c:"Analogías",q:'8 es a 64 como 11 es a…',o:["88","111","121","132"],a:2,e:"Es el cuadrado: 11² = 121."},
- {c:"Clasificación",q:"¿Cuál no pertenece al grupo? Perro, Gato, Águila, Caballo, Vaca",o:["Perro","Águila","Caballo","Vaca"],a:1,e:"El águila es un ave; los demás son mamíferos."},
- {c:"Lógica",q:"Todos los bloops son razzies y todos los razzies son lazzies. ¿Todos los bloops son lazzies?",o:["Sí, seguro","No","No se puede saber","Solo algunos"],a:0,e:"Si A ⊂ B y B ⊂ C, entonces A ⊂ C."},
- {c:"Lógica",q:"El padre de María tiene cinco hijas: Nana, Nene, Nini y Nono. ¿Cómo se llama la quinta?",o:["Nunu","María","Nina","No se sabe"],a:1,e:"La quinta hija es María, la protagonista de la pregunta."},
- {c:"Lógica",q:"Si ayer fuera mañana, hoy sería viernes. ¿Qué día es hoy?",o:["Miércoles","Viernes","Domingo","Sábado"],a:2,e:"El “hoy” hipotético está dos días antes del real: viernes + 2 = domingo."},
- {c:"Problemas",q:"Un bate y una pelota cuestan 1,10 €. El bate cuesta 1 € más que la pelota. ¿Cuánto cuesta la pelota?",o:["0,10 €","0,05 €","0,15 €","0,01 €"],a:1,e:"Pelota = x, bate = x+1. 2x+1 = 1,10 → x = 0,05 €."},
- {c:"Problemas",q:"5 máquinas hacen 5 piezas en 5 minutos. ¿Cuánto tardan 100 máquinas en hacer 100 piezas?",o:["100 min","20 min","5 min","1 min"],a:2,e:"Cada máquina hace una pieza en 5 minutos, así que siguen siendo 5 minutos."},
- {c:"Problemas",q:"Unos nenúfares duplican su superficie cada día y cubren el lago en 48 días. ¿En cuántos días cubren la mitad?",o:["24","47","46","36"],a:1,e:"Un día antes de cubrirlo entero: día 47."},
- {c:"Problemas",q:"Un padre tiene 4 veces la edad de su hijo. Dentro de 20 años tendrá el doble. ¿Qué edad tiene el hijo?",o:["8","10","12","15"],a:1,e:"4x+20 = 2(x+20) → 2x = 20 → x = 10."},
- {c:"Problemas",q:"Un tren sale a las 9:00 a 60 km/h. Otro sale del mismo sitio a las 10:00 a 90 km/h en el mismo sentido. ¿A qué hora lo alcanza?",o:["11:00","11:30","12:00","13:00"],a:2,e:"Ventaja de 60 km, se acerca a 30 km/h: 2 horas después de las 10:00."},
- {c:"Espacial",q:"Pintas un cubo por fuera y lo cortas en 27 cubitos iguales. ¿Cuántos cubitos tienen exactamente dos caras pintadas?",o:["8","6","12","24"],a:2,e:"Los cubitos del centro de cada arista: 12 aristas × 1 = 12."},
- {c:"Espacial",q:"¿Qué ángulo forman las agujas del reloj a las 3:15?",o:["0°","7,5°","15°","30°"],a:1,e:"La aguja horaria avanza 0,5° por minuto: 15 × 0,5 = 7,5°."},
- {c:"Espacial",q:"Miras al norte, giras 90° a la derecha, luego 180°, luego 90° a la izquierda. ¿Hacia dónde miras?",o:["Norte","Sur","Este","Oeste"],a:1,e:"Norte → Este → Oeste → Sur."},
- {c:"Verbal",q:"Ordena las letras de «RAMO» para formar una palabra opuesta a «odio».",o:["MORA","ROMA","AMOR","OMAR"],a:2,e:"AMOR es lo opuesto a odio."}
+ {c:"series",o:["40","42","44","36"],a:1,
+  q:{es:"¿Qué número sigue? "+S("2, 6, 12, 20, 30, ?"),it:"Quale numero viene dopo? "+S("2, 6, 12, 20, 30, ?"),en:"What number comes next? "+S("2, 6, 12, 20, 30, ?"),ne:"अर्को सङ्ख्या कुन हो? "+S("2, 6, 12, 20, 30, ?")},
+  e:{es:"Son n×(n+1): 6×7 = 42.",it:"Sono n×(n+1): 6×7 = 42.",en:"They are n×(n+1): 6×7 = 42.",ne:"यी n×(n+1) हुन्: 6×7 = 42।"}},
+ {c:"series",o:["49","64","65","66"],a:2,
+  q:{es:"¿Qué número sigue? "+S("3, 5, 9, 17, 33, ?"),it:"Quale numero viene dopo? "+S("3, 5, 9, 17, 33, ?"),en:"What number comes next? "+S("3, 5, 9, 17, 33, ?"),ne:"अर्को सङ्ख्या कुन हो? "+S("3, 5, 9, 17, 33, ?")},
+  e:{es:"Cada término es el doble menos 1: 33×2−1 = 65.",it:"Ogni termine è il doppio meno 1: 33×2−1 = 65.",en:"Each term is double minus 1: 33×2−1 = 65.",ne:"हरेक पद दोब्बर घटाउ 1 हो: 33×2−1 = 65।"}},
+ {c:"series",o:["S","T","U","V"],a:2,
+  q:{es:"¿Qué letra sigue? "+S("A, C, F, J, O, ?"),it:"Quale lettera viene dopo? "+S("A, C, F, J, O, ?"),en:"What letter comes next? "+S("A, C, F, J, O, ?"),ne:"अर्को अक्षर कुन हो? "+S("A, C, F, J, O, ?")},
+  e:{es:"Saltos de +2, +3, +4, +5, +6 en el alfabeto inglés: O(15)+6 = U(21).",it:"Salti di +2, +3, +4, +5, +6 nell'alfabeto inglese: O(15)+6 = U(21).",en:"Jumps of +2, +3, +4, +5, +6: O(15)+6 = U(21).",ne:"अङ्ग्रेजी वर्णमालामा +2, +3, +4, +5, +6 को फड्को: O(15)+6 = U(21)।"}},
+ {c:"series",o:["15","17","19","16"],a:1,
+  q:{es:"¿Qué número sigue? "+S("2, 3, 5, 7, 11, 13, ?"),it:"Quale numero viene dopo? "+S("2, 3, 5, 7, 11, 13, ?"),en:"What number comes next? "+S("2, 3, 5, 7, 11, 13, ?"),ne:"अर्को सङ्ख्या कुन हो? "+S("2, 3, 5, 7, 11, 13, ?")},
+  e:{es:"Son números primos; el siguiente es 17.",it:"Sono numeri primi; il successivo è 17.",en:"They are prime numbers; the next is 17.",ne:"यी अभाज्य सङ्ख्या हुन्; अर्को 17 हो।"}},
+ {c:"matrix",o:["32","48","64","56"],a:2,
+  q:{es:"Completa la tabla: "+S("2 4 8 · 3 9 27 · 4 16 ?"),it:"Completa la tabella: "+S("2 4 8 · 3 9 27 · 4 16 ?"),en:"Complete the grid: "+S("2 4 8 · 3 9 27 · 4 16 ?"),ne:"तालिका पूरा गर्नुहोस्: "+S("2 4 8 · 3 9 27 · 4 16 ?")},
+  e:{es:"Cada fila son potencias: 4, 4², 4³ = 64.",it:"Ogni riga sono potenze: 4, 4², 4³ = 64.",en:"Each row is powers: 4, 4², 4³ = 64.",ne:"हरेक पङ्क्ति घात हो: 4, 4², 4³ = 64।"}},
+ {c:"analogy",a:1,
+  o:{es:["Bosque","Hoja","Madera","Raíz"],it:["Bosco","Foglia","Legno","Radice"],en:["Forest","Leaf","Wood","Root"],ne:["जङ्गल","पात","काठ","जरा"]},
+  q:{es:"Libro es a página como árbol es a…",it:"Libro sta a pagina come albero sta a…",en:"Book is to page as tree is to…",ne:"किताब र पाना जस्तै रूख र…"},
+  e:{es:"Una página es parte de un libro; una hoja es parte de un árbol.",it:"La pagina è parte del libro; la foglia è parte dell'albero.",en:"A page is part of a book; a leaf is part of a tree.",ne:"पाना किताबको भाग हो; पात रूखको भाग हो।"}},
+ {c:"analogy",o:["88","111","121","132"],a:2,
+  q:{es:"8 es a 64 como 11 es a…",it:"8 sta a 64 come 11 sta a…",en:"8 is to 64 as 11 is to…",ne:"8 र 64 जस्तै 11 र…"},
+  e:{es:"Es el cuadrado: 11² = 121.",it:"È il quadrato: 11² = 121.",en:"It's the square: 11² = 121.",ne:"यो वर्ग हो: 11² = 121।"}},
+ {c:"odd",a:1,
+  o:{es:["Perro","Águila","Caballo","Vaca"],it:["Cane","Aquila","Cavallo","Mucca"],en:["Dog","Eagle","Horse","Cow"],ne:["कुकुर","चील","घोडा","गाई"]},
+  q:{es:"¿Cuál no pertenece al grupo?",it:"Quale non appartiene al gruppo?",en:"Which one doesn't belong?",ne:"कुन चाहिँ समूहमा पर्दैन?"},
+  e:{es:"El águila es un ave; los demás son mamíferos.",it:"L'aquila è un uccello; gli altri sono mammiferi.",en:"The eagle is a bird; the others are mammals.",ne:"चील चरा हो; अरू सबै स्तनधारी हुन्।"}},
+ {c:"logic",a:0,
+  o:{es:["Sí, seguro","No","No se puede saber","Solo algunos"],it:["Sì, di sicuro","No","Non si può sapere","Solo alcuni"],en:["Yes, definitely","No","Can't be known","Only some"],ne:["हो, पक्कै","होइन","थाहा पाउन सकिँदैन","केही मात्र"]},
+  q:{es:"Todos los bloops son razzies y todos los razzies son lazzies. ¿Todos los bloops son lazzies?",it:"Tutti i bloop sono razzie e tutti i razzie sono lazzie. Tutti i bloop sono lazzie?",en:"All bloops are razzies and all razzies are lazzies. Are all bloops lazzies?",ne:"सबै ब्लुप रेजी हुन् र सबै रेजी लेजी हुन्। के सबै ब्लुप लेजी हुन्?"},
+  e:{es:"Si A ⊂ B y B ⊂ C, entonces A ⊂ C.",it:"Se A ⊂ B e B ⊂ C, allora A ⊂ C.",en:"If A ⊂ B and B ⊂ C, then A ⊂ C.",ne:"यदि A ⊂ B र B ⊂ C भए, A ⊂ C हुन्छ।"}},
+ {c:"logic",a:1,
+  o:{es:["Nunu","María","Nina","No se sabe"],it:["Nunu","Maria","Nina","Non si sa"],en:["Nunu","Mary","Nina","Unknown"],ne:["नुनु","मरियम","निना","थाहा छैन"]},
+  q:{es:"El padre de María tiene cinco hijas: Nana, Nene, Nini y Nono. ¿Cómo se llama la quinta?",it:"Il padre di Maria ha cinque figlie: Nana, Nene, Nini e Nono. Come si chiama la quinta?",en:"Mary's father has five daughters: Nana, Nene, Nini and Nono. What is the fifth one's name?",ne:"मरियमका बुबाका पाँच छोरी छन्: नाना, नेने, निनी र नोनो। पाँचौँको नाम के हो?"},
+  e:{es:"La quinta hija es María, la protagonista de la pregunta.",it:"La quinta figlia è Maria, citata nella domanda.",en:"The fifth daughter is Mary herself.",ne:"पाँचौँ छोरी मरियम आफैँ हुन्।"}},
+ {c:"logic",a:2,
+  o:{es:["Miércoles","Viernes","Domingo","Sábado"],it:["Mercoledì","Venerdì","Domenica","Sabato"],en:["Wednesday","Friday","Sunday","Saturday"],ne:["बुधबार","शुक्रबार","आइतबार","शनिबार"]},
+  q:{es:"Si ayer fuera mañana, hoy sería viernes. ¿Qué día es hoy?",it:"Se ieri fosse domani, oggi sarebbe venerdì. Che giorno è oggi?",en:"If yesterday were tomorrow, today would be Friday. What day is it today?",ne:"यदि हिजो भोलि भएको भए, आज शुक्रबार हुन्थ्यो। आज कुन बार हो?"},
+  e:{es:"El “hoy” hipotético está dos días antes del real: viernes + 2 = domingo.",it:"L'“oggi” ipotetico è due giorni prima di quello reale: venerdì + 2 = domenica.",en:"The hypothetical “today” is two days before the real one: Friday + 2 = Sunday.",ne:"काल्पनिक “आज” वास्तविक आजभन्दा दुई दिन अघि हो: शुक्रबार + २ = आइतबार।"}},
+ {c:"prob",o:["0,10","0,05","0,15","0,01"],a:1,
+  q:{es:"Un bate y una pelota cuestan 1,10 €. El bate cuesta 1 € más que la pelota. ¿Cuánto cuesta la pelota (€)?",it:"Una mazza e una palla costano 1,10 €. La mazza costa 1 € più della palla. Quanto costa la palla (€)?",en:"A bat and a ball cost 1.10 €. The bat costs 1 € more than the ball. How much is the ball (€)?",ne:"एउटा ब्याट र बलको मूल्य 1.10 € हो। ब्याट बलभन्दा 1 € महँगो छ। बलको मूल्य कति (€)?"},
+  e:{es:"Pelota = x, bate = x+1. 2x+1 = 1,10 → x = 0,05 €.",it:"Palla = x, mazza = x+1. 2x+1 = 1,10 → x = 0,05 €.",en:"Ball = x, bat = x+1. 2x+1 = 1.10 → x = 0.05 €.",ne:"बल = x, ब्याट = x+1। 2x+1 = 1.10 → x = 0.05 €।"}},
+ {c:"prob",a:2,
+  o:{es:["100 min","20 min","5 min","1 min"],it:["100 min","20 min","5 min","1 min"],en:["100 min","20 min","5 min","1 min"],ne:["100 मिनेट","20 मिनेट","5 मिनेट","1 मिनेट"]},
+  q:{es:"5 máquinas hacen 5 piezas en 5 minutos. ¿Cuánto tardan 100 máquinas en hacer 100 piezas?",it:"5 macchine fanno 5 pezzi in 5 minuti. Quanto ci mettono 100 macchine a fare 100 pezzi?",en:"5 machines make 5 parts in 5 minutes. How long do 100 machines take to make 100 parts?",ne:"5 वटा मेसिनले 5 मिनेटमा 5 वटा सामान बनाउँछन्। 100 मेसिनले 100 सामान बनाउन कति समय लाग्छ?"},
+  e:{es:"Cada máquina hace una pieza en 5 minutos, así que siguen siendo 5 minutos.",it:"Ogni macchina fa un pezzo in 5 minuti, quindi restano 5 minuti.",en:"Each machine makes one part in 5 minutes, so it's still 5 minutes.",ne:"हरेक मेसिनले 5 मिनेटमा एउटा सामान बनाउँछ, त्यसैले 5 मिनेट नै लाग्छ।"}},
+ {c:"prob",o:["24","47","46","36"],a:1,
+  q:{es:"Unos nenúfares duplican su superficie cada día y cubren el lago en 48 días. ¿En cuántos días cubren la mitad?",it:"Delle ninfee raddoppiano la loro superficie ogni giorno e coprono il lago in 48 giorni. In quanti giorni ne coprono metà?",en:"Lily pads double in area every day and cover the lake in 48 days. How many days to cover half of it?",ne:"कमलका पातहरू हरेक दिन दोब्बर हुन्छन् र 48 दिनमा पूरै ताल ढाक्छन्। आधा ताल ढाक्न कति दिन लाग्छ?"},
+  e:{es:"Un día antes de cubrirlo entero: día 47.",it:"Il giorno prima di coprirlo tutto: giorno 47.",en:"One day before it's fully covered: day 47.",ne:"पूरै ढाक्नुभन्दा एक दिन अघि: 47 औँ दिन।"}},
+ {c:"prob",o:["8","10","12","15"],a:1,
+  q:{es:"Un padre tiene 4 veces la edad de su hijo. Dentro de 20 años tendrá el doble. ¿Qué edad tiene el hijo?",it:"Un padre ha 4 volte l'età del figlio. Tra 20 anni ne avrà il doppio. Quanti anni ha il figlio?",en:"A father is 4 times his son's age. In 20 years he'll be twice his age. How old is the son?",ne:"बुबाको उमेर छोराको ४ गुणा छ। २० वर्षपछि दोब्बर हुनेछ। छोराको उमेर कति हो?"},
+  e:{es:"4x+20 = 2(x+20) → 2x = 20 → x = 10.",it:"4x+20 = 2(x+20) → 2x = 20 → x = 10.",en:"4x+20 = 2(x+20) → 2x = 20 → x = 10.",ne:"4x+20 = 2(x+20) → 2x = 20 → x = 10।"}},
+ {c:"prob",o:["11:00","11:30","12:00","13:00"],a:2,
+  q:{es:"Un tren sale a las 9:00 a 60 km/h. Otro sale del mismo sitio a las 10:00 a 90 km/h en el mismo sentido. ¿A qué hora lo alcanza?",it:"Un treno parte alle 9:00 a 60 km/h. Un altro parte dallo stesso posto alle 10:00 a 90 km/h nella stessa direzione. A che ora lo raggiunge?",en:"A train leaves at 9:00 at 60 km/h. Another leaves the same place at 10:00 at 90 km/h in the same direction. When does it catch up?",ne:"एउटा रेल 9:00 बजे 60 km/h मा छुट्छ। अर्को रेल सोही ठाउँबाट 10:00 बजे 90 km/h मा उही दिशामा छुट्छ। कति बजे भेट्छ?"},
+  e:{es:"Ventaja de 60 km, se acerca a 30 km/h: 2 horas después de las 10:00.",it:"Vantaggio di 60 km, recupera 30 km/h: 2 ore dopo le 10:00.",en:"60 km head start, closing at 30 km/h: 2 hours after 10:00.",ne:"60 km अगाडि, 30 km/h ले नजिकिन्छ: 10:00 पछि 2 घण्टा।"}},
+ {c:"space",o:["8","6","12","24"],a:2,
+  q:{es:"Pintas un cubo por fuera y lo cortas en 27 cubitos iguales. ¿Cuántos tienen exactamente dos caras pintadas?",it:"Dipingi un cubo all'esterno e lo tagli in 27 cubetti uguali. Quanti hanno esattamente due facce dipinte?",en:"You paint a cube on the outside and cut it into 27 equal small cubes. How many have exactly two painted faces?",ne:"एउटा घनलाई बाहिरबाट रङ लगाएर 27 वटा बराबर साना घनमा काटियो। ठ्याक्कै दुई मोहडा रङ्गिएका कति छन्?"},
+  e:{es:"Los cubitos del centro de cada arista: 12 aristas × 1 = 12.",it:"I cubetti al centro di ogni spigolo: 12 spigoli × 1 = 12.",en:"The middle cube on each edge: 12 edges × 1 = 12.",ne:"हरेक किनाराको बीचको घन: 12 किनारा × 1 = 12।"}},
+ {c:"space",o:["0°","7,5°","15°","30°"],a:1,
+  q:{es:"¿Qué ángulo forman las agujas del reloj a las 3:15?",it:"Che angolo formano le lancette dell'orologio alle 3:15?",en:"What angle do the clock hands make at 3:15?",ne:"3:15 बजे घडीका सुईहरूबीच कति डिग्रीको कोण बन्छ?"},
+  e:{es:"La aguja horaria avanza 0,5° por minuto: 15 × 0,5 = 7,5°.",it:"La lancetta delle ore avanza di 0,5° al minuto: 15 × 0,5 = 7,5°.",en:"The hour hand moves 0.5° per minute: 15 × 0.5 = 7.5°.",ne:"घण्टाको सुई हरेक मिनेट 0.5° सर्छ: 15 × 0.5 = 7.5°।"}},
+ {c:"space",a:1,
+  o:{es:["Norte","Sur","Este","Oeste"],it:["Nord","Sud","Est","Ovest"],en:["North","South","East","West"],ne:["उत्तर","दक्षिण","पूर्व","पश्चिम"]},
+  q:{es:"Miras al norte, giras 90° a la derecha, luego 180°, luego 90° a la izquierda. ¿Hacia dónde miras?",it:"Guardi a nord, giri di 90° a destra, poi di 180°, poi di 90° a sinistra. Dove guardi?",en:"You face north, turn 90° right, then 180°, then 90° left. Which way are you facing?",ne:"तपाईं उत्तर फर्कनुहुन्छ, 90° दायाँ घुम्नुहुन्छ, त्यसपछि 180°, अनि 90° बायाँ। अब कता फर्कनुभएको छ?"},
+  e:{es:"Norte → Este → Oeste → Sur.",it:"Nord → Est → Ovest → Sud.",en:"North → East → West → South.",ne:"उत्तर → पूर्व → पश्चिम → दक्षिण।"}},
+ {c:"odd",o:["16","25","48","64"],a:2,
+  q:{es:"¿Qué número no encaja? "+S("16, 25, 36, 48, 64"),it:"Quale numero non c'entra? "+S("16, 25, 36, 48, 64"),en:"Which number doesn't fit? "+S("16, 25, 36, 48, 64"),ne:"कुन सङ्ख्या मेल खाँदैन? "+S("16, 25, 36, 48, 64")},
+  e:{es:"Todos son cuadrados perfectos menos 48.",it:"Sono tutti quadrati perfetti tranne 48.",en:"All are perfect squares except 48.",ne:"48 बाहेक सबै पूर्ण वर्ग हुन्।"}}
 ];
 const $=id=>document.getElementById(id);
-let i=0,ans=Array(Q.length).fill(null),t0=0,tick=null,elapsed=0;
+let L="es";
+try{const s=localStorage.getItem("lang");if(s&&UI[s])L=s;else{const n=(navigator.language||"").slice(0,2);if(UI[n])L=n;}}catch(e){}
+let i=0,ans=Array(Q.length).fill(null),t0=0,tick=null,elapsed=0,cur="intro";
 const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
-function show(sec){["intro","quiz","result"].forEach(k=>{const el=$(k);el.hidden=k!==sec;el.style.display=k===sec?"grid":"none"});}
+const opts=q=>Array.isArray(q.o)?q.o:q.o[L];
+function show(sec){cur=sec;["intro","quiz","result"].forEach(k=>{const el=$(k);el.hidden=k!==sec;el.style.display=k===sec?"grid":"none"});}
+function applyLang(){
+  const u=UI[L];document.documentElement.lang=L;document.title=u.title;
+  document.querySelectorAll(".lang").forEach(b=>b.setAttribute("aria-pressed",b.dataset.l===L));
+  $("title").textContent=u.title;$("lead").textContent=u.lead;$("rules").innerHTML=u.rules.map(r=>`<li>${r}</li>`).join("");
+  $("start").textContent=u.start;$("prev").textContent=u.prev;$("again").textContent=u.again;
+  $("l_iq").textContent=u.iq;$("l_hits").textContent=u.hits;$("l_time").textContent=u.time;$("l_sol").textContent=u.sol;$("disc").textContent=u.disc;
+  if(cur==="quiz")render();if(cur==="result")results();
+}
 function render(){
-  const q=Q[i];
-  $("qnum").textContent=`Pregunta ${i+1} de ${Q.length}`;
-  $("qcat").textContent=q.c;
-  $("qtext").innerHTML=q.q;
-  $("prog").style.width=((i)/Q.length*100)+"%";
+  const q=Q[i],u=UI[L];
+  $("qnum").textContent=u.q(i+1,Q.length);$("qcat").textContent=CAT[q.c][L];$("qtext").innerHTML=q.q[L];
+  $("prog").style.width=(i/Q.length*100)+"%";
   const box=$("opts");box.innerHTML="";
-  q.o.forEach((t,k)=>{const b=document.createElement("button");b.className="opt"+(ans[i]===k?" sel":"");b.id="opt"+k;
-    b.innerHTML=`<b>${"ABCD"[k]}</b><span>${t}</span>`;
-    b.onclick=()=>{ans[i]=k;render();};box.appendChild(b);});
-  $("prev").disabled=i===0;
-  $("next").textContent=i===Q.length-1?"Ver resultado":"Siguiente";
-  $("next").disabled=ans[i]===null;
+  opts(q).forEach((t,k)=>{const b=document.createElement("button");b.className="opt"+(ans[i]===k?" sel":"");b.id="opt"+k;
+    b.innerHTML=`<b>${"ABCD"[k]}</b><span>${t}</span>`;b.onclick=()=>{ans[i]=k;render();};box.appendChild(b);});
+  $("prev").disabled=i===0;$("next").textContent=i===Q.length-1?u.finish:u.next;$("next").disabled=ans[i]===null;
 }
 function start(){i=0;ans=Array(Q.length).fill(null);t0=Date.now();clearInterval(tick);
   tick=setInterval(()=>{elapsed=Math.floor((Date.now()-t0)/1000);$("timer").textContent=fmt(elapsed)},1000);
   $("timer").textContent="00:00";show("quiz");render();}
-function finish(){
-  clearInterval(tick);elapsed=Math.floor((Date.now()-t0)/1000);
-  const hits=ans.filter((a,k)=>a===Q[k].a).length;
-  let iq=70+hits*3.75;
-  if(hits>=15&&elapsed<600)iq+=3; // bonus por rapidez con alta precisión
-  iq=Math.round(Math.min(145,iq));
+function results(){
+  const u=UI[L],hits=ans.filter((a,k)=>a===Q[k].a).length;
+  let iq=70+hits*3.75;if(hits>=15&&elapsed<600)iq+=3;iq=Math.round(Math.min(145,iq));
   $("iq").textContent=iq;$("hits").textContent=`${hits}/${Q.length}`;$("time").textContent=fmt(elapsed);
   $("pin").style.left=Math.max(0,Math.min(100,(iq-70)/75*100))+"%";
-  $("band").textContent= iq>=130?"Rango muy superior: razonamiento excepcional en este tipo de problemas.":
-    iq>=115?"Rango superior a la media.":iq>=85?"Rango medio: donde se sitúa la mayoría de la población.":
-    "Por debajo de la media en este test. El cansancio o las prisas influyen mucho; prueba otro día con calma.";
-  $("review").innerHTML=Q.map((q,k)=>{const ok=ans[k]===q.a;
-    return `<li class="${ok?"ok":"ko"}"><span class="t">${k+1}. ${q.q.replace(/<[^>]+>/g,"")}</span>
-    <span class="r">${ok?"Correcta":"Tu respuesta: "+q.o[ans[k]]+" · Correcta: "+q.o[q.a]}</span><span>${q.e}</span></li>`}).join("");
-  show("result");window.scrollTo(0,0);
+  $("band").textContent=u.bands[iq>=130?0:iq>=115?1:iq>=85?2:3];
+  $("review").innerHTML=Q.map((q,k)=>{const ok=ans[k]===q.a,o=opts(q);
+    return `<li class="${ok?"ok":"ko"}"><span class="t">${k+1}. ${q.q[L].replace(/<[^>]+>/g,"")}</span>
+    <span class="r">${ok?u.ok:u.yours+": "+o[ans[k]]+" · "+u.right+": "+o[q.a]}</span><span>${q.e[L]}</span></li>`}).join("");
 }
+function finish(){clearInterval(tick);elapsed=Math.floor((Date.now()-t0)/1000);results();show("result");window.scrollTo(0,0);}
+document.querySelectorAll(".lang").forEach(b=>b.onclick=()=>{L=b.dataset.l;try{localStorage.setItem("lang",L)}catch(e){}applyLang();});
 $("start").onclick=start;$("again").onclick=start;
 $("prev").onclick=()=>{if(i>0){i--;render();}};
 $("next").onclick=()=>{if(ans[i]===null)return;if(i<Q.length-1){i++;render();}else finish();};
-show("intro");
+show("intro");applyLang();
 </script>
 </body>
 </html>
