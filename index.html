@@ -79,6 +79,7 @@ h2{font-family:var(--display);font-weight:500;font-size:1.2rem;margin:0}
       <button class="lang" data-l="es">ES</button>
       <button class="lang" data-l="it">IT</button>
       <button class="lang" data-l="en">EN</button>
+      <button class="lang" data-l="nl">NL</button>
       <button class="lang" data-l="ne">नेपाली</button>
     </div>
     <span class="meta" id="timer">00:00</span>
@@ -227,6 +228,36 @@ const Q=[
   q:{es:"¿Qué número no encaja? "+S("16, 25, 36, 48, 64"),it:"Quale numero non c'entra? "+S("16, 25, 36, 48, 64"),en:"Which number doesn't fit? "+S("16, 25, 36, 48, 64"),ne:"कुन सङ्ख्या मेल खाँदैन? "+S("16, 25, 36, 48, 64")},
   e:{es:"Todos son cuadrados perfectos menos 48.",it:"Sono tutti quadrati perfetti tranne 48.",en:"All are perfect squares except 48.",ne:"48 बाहेक सबै पूर्ण वर्ग हुन्।"}}
 ];
+UI.nl={title:"Redeneertest",lead:"20 vragen over getallenreeksen, logica, analogieën en vraagstukken. Aan het eind zie je een indicatieve schatting van je IQ en de oplossing van elke vraag.",
+ rules:["Antwoord zonder rekenmachine of zoekmachine.","Je kunt teruggaan en je antwoorden wijzigen.","Aanbevolen tijd: ongeveer 20 minuten."],
+ start:"Start de test",q:(a,b)=>`Vraag ${a} van ${b}`,prev:"Vorige",next:"Volgende",finish:"Bekijk resultaat",
+ iq:"Geschat IQ",hits:"Goed",time:"Tijd",sol:"Oplossingen",again:"Test opnieuw doen",ok:"Goed",yours:"Jouw antwoord",right:"Goed",
+ disc:"Dit is een schatting voor de lol. Een echt IQ kan alleen worden gemeten met een gestandaardiseerde test (zoals de WAIS) afgenomen door een psycholoog.",
+ bands:["Zeer hoog bereik: uitzonderlijk redeneervermogen bij dit soort vragen.","Bovengemiddeld bereik.","Gemiddeld bereik: hier valt het grootste deel van de mensen.","Onder het gemiddelde in deze test. Vermoeidheid en haast spelen een grote rol; probeer het een andere dag rustig opnieuw."]};
+Object.assign(CAT.series,{nl:"Reeksen"});Object.assign(CAT.matrix,{nl:"Matrices"});Object.assign(CAT.analogy,{nl:"Analogieën"});
+Object.assign(CAT.odd,{nl:"Classificatie"});Object.assign(CAT.logic,{nl:"Logica"});Object.assign(CAT.prob,{nl:"Vraagstukken"});Object.assign(CAT.space,{nl:"Ruimtelijk"});
+[
+ {q:"Welk getal komt hierna? "+S("2, 6, 12, 20, 30, ?"),e:"Het zijn n×(n+1): 6×7 = 42."},
+ {q:"Welk getal komt hierna? "+S("3, 5, 9, 17, 33, ?"),e:"Elk getal is het dubbele min 1: 33×2−1 = 65."},
+ {q:"Welke letter komt hierna? "+S("A, C, F, J, O, ?"),e:"Sprongen van +2, +3, +4, +5, +6: O(15)+6 = U(21)."},
+ {q:"Welk getal komt hierna? "+S("2, 3, 5, 7, 11, 13, ?"),e:"Het zijn priemgetallen; de volgende is 17."},
+ {q:"Vul het rooster aan: "+S("2 4 8 · 3 9 27 · 4 16 ?"),e:"Elke rij bestaat uit machten: 4, 4², 4³ = 64."},
+ {q:"Boek staat tot bladzijde als boom staat tot…",o:["Bos","Blad","Hout","Wortel"],e:"Een bladzijde is een deel van een boek; een blad is een deel van een boom."},
+ {q:"8 staat tot 64 als 11 staat tot…",e:"Het is het kwadraat: 11² = 121."},
+ {q:"Welke hoort er niet bij?",o:["Hond","Adelaar","Paard","Koe"],e:"De adelaar is een vogel; de rest zijn zoogdieren."},
+ {q:"Alle bloops zijn razzies en alle razzies zijn lazzies. Zijn alle bloops lazzies?",o:["Ja, zeker","Nee","Niet te zeggen","Slechts sommige"],e:"Als A ⊂ B en B ⊂ C, dan A ⊂ C."},
+ {q:"De vader van Maria heeft vijf dochters: Nana, Nene, Nini en Nono. Hoe heet de vijfde?",o:["Nunu","Maria","Nina","Onbekend"],e:"De vijfde dochter is Maria zelf."},
+ {q:"Als gisteren morgen was, zou het vandaag vrijdag zijn. Welke dag is het vandaag?",o:["Woensdag","Vrijdag","Zondag","Zaterdag"],e:"Het denkbeeldige “vandaag” ligt twee dagen vóór het echte: vrijdag + 2 = zondag."},
+ {q:"Een knuppel en een bal kosten samen 1,10 €. De knuppel kost 1 € meer dan de bal. Hoeveel kost de bal (€)?",e:"Bal = x, knuppel = x+1. 2x+1 = 1,10 → x = 0,05 €."},
+ {q:"5 machines maken 5 onderdelen in 5 minuten. Hoe lang doen 100 machines over 100 onderdelen?",o:["100 min","20 min","5 min","1 min"],e:"Elke machine maakt één onderdeel in 5 minuten, dus het blijft 5 minuten."},
+ {q:"Waterlelies verdubbelen elke dag in oppervlakte en bedekken het meer in 48 dagen. In hoeveel dagen bedekken ze de helft?",e:"Eén dag voordat het meer helemaal bedekt is: dag 47."},
+ {q:"Een vader is 4 keer zo oud als zijn zoon. Over 20 jaar is hij twee keer zo oud. Hoe oud is de zoon?",e:"4x+20 = 2(x+20) → 2x = 20 → x = 10."},
+ {q:"Een trein vertrekt om 9:00 met 60 km/u. Een andere vertrekt om 10:00 van dezelfde plek met 90 km/u in dezelfde richting. Hoe laat haalt hij hem in?",e:"60 km voorsprong, inlopen met 30 km/u: 2 uur na 10:00."},
+ {q:"Je verft een kubus aan de buitenkant en zaagt hem in 27 gelijke blokjes. Hoeveel blokjes hebben precies twee geverfde zijden?",e:"Het middelste blokje van elke ribbe: 12 ribben × 1 = 12."},
+ {q:"Welke hoek maken de wijzers van de klok om 3:15?",e:"De uurwijzer draait 0,5° per minuut: 15 × 0,5 = 7,5°."},
+ {q:"Je kijkt naar het noorden, draait 90° naar rechts, dan 180°, dan 90° naar links. Welke kant kijk je op?",o:["Noord","Zuid","Oost","West"],e:"Noord → Oost → West → Zuid."},
+ {q:"Welk getal past er niet bij? "+S("16, 25, 36, 48, 64"),e:"Allemaal kwadraten behalve 48."}
+].forEach((x,k)=>{Q[k].q.nl=x.q;Q[k].e.nl=x.e;if(x.o)Q[k].o.nl=x.o;});
 const $=id=>document.getElementById(id);
 let L="es";
 try{const s=localStorage.getItem("lang");if(s&&UI[s])L=s;else{const n=(navigator.language||"").slice(0,2);if(UI[n])L=n;}}catch(e){}
